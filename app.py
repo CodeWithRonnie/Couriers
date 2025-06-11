@@ -48,13 +48,48 @@ def load_user(user_id):
 def home():
     return render_template('index.html')
 
-@app.route('/track')
+# API endpoint to get tracking information
+@app.route('/api/track/<tracking_number>', methods=['GET'])
+def get_tracking(tracking_number):
+    """API endpoint to get tracking information for a shipment"""
+    if not tracking_number:
+        return jsonify({
+            'status': 'error',
+            'message': 'Tracking number is required'
+        }), 400
+    
+    shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
+    
+    if not shipment:
+        return jsonify({
+            'status': 'not_found',
+            'message': 'No shipment found with this tracking number'
+        }), 404
+    
+    # Format the response
+    shipment_data = {
+        'tracking_number': shipment.tracking_number,
+        'status': shipment.status,
+        'sender': shipment.sender_name,
+        'receiver': shipment.receiver_name,
+        'pickup_address': shipment.pickup_address,
+        'delivery_address': shipment.delivery_address,
+        'created_at': shipment.created_at.isoformat(),
+        'weight': shipment.weight,
+        'description': shipment.description
+    }
+    
+    return jsonify({
+        'status': 'success',
+        'data': shipment_data
+    })
+
+# Track page route
+@app.route('/track', methods=['GET'])
 def track():
-    tracking_number = request.args.get('tracking_number')
-    if tracking_number:
-        shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
-        return render_template('track.html', shipment=shipment)
-    return render_template('track.html')
+    """Render the tracking page"""
+    tracking_number = request.args.get('tracking_number', '').strip()
+    return render_template('track.html', tracking_number=tracking_number)
 
 @app.route('/services')
 def services():
