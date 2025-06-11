@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - SpeedyCourier{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="page-header bg-primary text-white py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold">Contact Us</h1>
+        <p class="lead">We're here to help with all your delivery needs</p>
+    </div>
+</section>
+
+<!-- Contact Form & Info -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Contact Form -->
+            <div class="col-lg-7">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="mb-4">Send us a Message</h2>
+                        <form id="contactForm" method="POST" action="{{ url_for('contact') }}">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject</label>
+                                <input type="text" class="form-control" id="subject" name="subject" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Message</label>
+                                <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="col-lg-5">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <h2 class="mb-4">Contact Information</h2>
+                        
+                        <div class="d-flex mb-4">
+                            <div class="me-3 text-primary">
+                                <i class="fas fa-map-marker-alt fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5>Our Location</h5>
+                                <p class="text-muted mb-0">123 Courier Street<br>Midrand, 1685</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-4">
+                            <div class="me-3 text-primary">
+                                <i class="fas fa-phone-alt fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5>Phone</h5>
+                                <p class="text-muted mb-0">+27 12 345 6789<br>Mon-Fri, 8am-5pm</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-4">
+                            <div class="me-3 text-primary">
+                                <i class="fas fa-envelope fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5>Email</h5>
+                                <p class="text-muted mb-0">info@speedycourier.co.za</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5>Follow Us</h5>
+                            <div class="d-flex">
+                                <a href="#" class="me-3 text-primary">
+                                    <i class="fab fa-facebook-f fa-lg"></i>
+                                </a>
+                                <a href="#" class="me-3 text-primary">
+                                    <i class="fab fa-twitter fa-lg"></i>
+                                </a>
+                                <a href="#" class="me-3 text-primary">
+                                    <i class="fab fa-instagram fa-lg"></i>
+                                </a>
+                                <a href="#" class="text-primary">
+                                    <i class="fab fa-linkedin-in fa-lg"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Map Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2>Our Location</h2>
+            <p class="lead text-muted">Find us on the map</p>
+        </div>
+        <div class="ratio ratio-16x9">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14373.54217631314!2d28.1234!3d-25.9876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e957d9e9b5d5e5b%3A0x1e0a4b5b5b5b5b5b5!2sMidrand%2C%20South%20Africa!5e0!3m2!1sen!2sza!4v1620000000000!5m2!1sen!2sza" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy">
+            </iframe>
+        </div>
+    </div>
+</section>
+{% endblock %}

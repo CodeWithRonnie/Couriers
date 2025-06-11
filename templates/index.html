@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Home - SpeedyCourier{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Fast & Reliable Courier Services</h1>
+                <p class="lead mb-4">Delivering your packages with speed and care across Midrand, Secunda, Polokwane, and Northwest.</p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('create_shipment') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-shipping-fast me-2"></i>Ship Now
+                    </a>
+                    <a href="{{ url_for('track') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-search me-2"></i>Track Shipment
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <img src="{{ url_for('static', filename='img/delivery-truck.svg') }}" alt="Delivery Truck" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Track Shipment Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <h2 class="text-center mb-4">Track Your Shipment</h2>
+                        <form action="{{ url_for('track') }}" method="GET" class="row g-3">
+                            <div class="col-md-9">
+                                <input type="text" name="tracking_number" class="form-control form-control-lg" 
+                                       placeholder="Enter your tracking number" required>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search me-2"></i>Track
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2>Our Services</h2>
+            <p class="lead">We offer a wide range of logistics solutions</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-4">
+                            <i class="fas fa-truck fa-2x"></i>
+                        </div>
+                        <h4>Same Day Delivery</h4>
+                        <p class="text-muted">Urgent deliveries within the same day for time-sensitive packages.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-4">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                        <h4>Parcel Delivery</h4>
+                        <p class="text-muted">Secure and reliable delivery of packages of all sizes.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-4">
+                            <i class="fas fa-warehouse fa-2x"></i>
+                        </div>
+                        <h4>Warehouse Solutions</h4>
+                        <p class="text-muted">Storage and distribution services for businesses of all sizes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('services') }}" class="btn btn-outline-primary">View All Services</a>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2>How It Works</h2>
+            <p class="lead">Simple steps to ship with us</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">1</div>
+                    <h4>Schedule Pickup</h4>
+                    <p>Book a pickup online or call us to schedule a pickup at your location.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">2</div>
+                    <h4>We Collect</h4>
+                    <p>Our courier will collect your package at the scheduled time.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">3</div>
+                    <h4>Fast Delivery</h4>
+                    <p>Your package will be delivered to the destination safely and on time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2>What Our Customers Say</h2>
+            <p class="lead">Trusted by businesses and individuals across the region</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <p class="mb-4">"Fast and reliable service. My package was delivered earlier than expected. Highly recommended!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    <span>JS</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">John Smith</h6>
+                                <small class="text-muted">Midrand</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <p class="mb-4">"Excellent customer service and tracking updates. Will definitely use SpeedyCourier again!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    <span>MJ</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Mary Johnson</h6>
+                                <small class="text-muted">Secunda</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <p class="mb-4">"Great service at competitive prices. My business relies on their timely deliveries."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    <span>DB</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">David Brown</h6>
+                                <small class="text-muted">Polokwane</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to Ship?</h2>
+        <p class="lead mb-4">Join thousands of satisfied customers who trust us with their deliveries.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('create_shipment') }}" class="btn btn-light btn-lg">
+                <i class="fas fa-shipping-fast me-2"></i>Ship Now
+            </a>
+            <a href="{{ url_for('contact') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-headset me-2"></i>Contact Us
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+}
+
+.icon-box {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 0.5rem;
+}
+
+.form-control-lg {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+</style>
+{% endblock %}
