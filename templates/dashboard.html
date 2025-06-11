@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SpeedyCourier{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ current_user.name or 'User' }}!</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('create_shipment') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New Shipment
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Total Shipments</h6>
+                            <h3 class="mb-0">{{ shipments|length }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-boxes text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">In Transit</h6>
+                            <h3 class="mb-0">{{ shipments|selectattr('status', 'equalto', 'In Transit')|list|length }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-truck text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Delivered</h6>
+                            <h3 class="mb-0">{{ shipments|selectattr('status', 'equalto', 'Delivered')|list|length }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Shipments -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Shipments</h5>
+            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if shipments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tracking #</th>
+                                <th>Receiver</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shipment in shipments %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('track_shipment', tracking_number=shipment.tracking_number) }}" class="text-decoration-none">
+                                        {{ shipment.tracking_number }}
+                                    </a>
+                                </td>
+                                <td>{{ shipment.receiver_name }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if shipment.status == 'Delivered' else 'bg-warning' if shipment.status == 'In Transit' else 'bg-info' }}">
+                                        {{ shipment.status }}
+                                    </span>
+                                </td>
+                                <td>{{ shipment.created_at.strftime('%b %d, %Y') }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('track_shipment', tracking_number=shipment.tracking_number) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Track
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-box-open fa-4x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted mb-3">No shipments found</h5>
+                    <p class="text-muted">Create your first shipment to get started</p>
+                    <a href="{{ url_for('create_shipment') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Shipment
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

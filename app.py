@@ -4,6 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import desc
 import os
+import random
 from datetime import datetime
 
 app = Flask(__name__)
@@ -216,16 +217,20 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+def generate_tracking_number():
+    """Generate a unique tracking number in format SCYYMMDDXXXXX"""
+    date_str = datetime.now().strftime('%y%m%d')
+    random_num = f"{random.randint(1, 99999):05d}"
+    return f"SC{date_str}{random_num}"
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.is_admin:
-        shipments = Shipment.query.order_by(Shipment.created_at.desc()).all()
-    else:
-        shipments = Shipment.query.filter_by(user_id=current_user.id).order_by(Shipment.created_at.desc()).all()
+    # Get user's shipments
+    shipments = Shipment.query.filter_by(user_id=current_user.id).order_by(Shipment.created_at.desc()).limit(5).all()
     return render_template('dashboard.html', shipments=shipments)
 
-@app.route('/create_shipment', methods=['GET', 'POST'])
+@app.route('/shipments/create', methods=['GET', 'POST'])
 @login_required
 def create_shipment():
     if request.method == 'POST':

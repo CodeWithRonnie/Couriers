@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Shipment - SpeedyCourier{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0"><i class="fas fa-box me-2"></i>Create New Shipment</h2>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('create_shipment') }}" class="needs-validation" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h4 class="border-bottom pb-2 mb-3">Sender Information</h4>
+                                
+                                <div class="mb-3">
+                                    <label for="sender_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="sender_name" name="sender_name" value="{{ current_user.name }}" required>
+                                    <div class="invalid-feedback">
+                                        Please enter sender's name.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="sender_phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" id="sender_phone" name="sender_phone" value="{{ current_user.phone }}" required>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid phone number.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="pickup_address" class="form-label">Pickup Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="pickup_address" name="pickup_address" rows="3" required></textarea>
+                                    <div class="invalid-feedback">
+                                        Please enter pickup address.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <h4 class="border-bottom pb-2 mb-3">Receiver Information</h4>
+                                
+                                <div class="mb-3">
+                                    <label for="receiver_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="receiver_name" name="receiver_name" required>
+                                    <div class="invalid-feedback">
+                                        Please enter receiver's name.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="receiver_phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" id="receiver_phone" name="receiver_phone" required>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid phone number.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="delivery_address" class="form-label">Delivery Address <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="delivery_address" name="delivery_address" rows="3" required></textarea>
+                                    <div class="invalid-feedback">
+                                        Please enter delivery address.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h4 class="border-bottom pb-2 mb-3">Shipment Details</h4>
+                                
+                                <div class="mb-3">
+                                    <label for="weight" class="form-label">Weight (kg) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="weight" name="weight" step="0.1" min="0.1" required>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid weight.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Package Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                    <div class="form-text">Brief description of the package contents (optional)</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <h4 class="border-bottom pb-2 mb-3">Shipping Options</h4>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Service Type</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="service_type" id="standard" value="standard" checked>
+                                        <label class="form-check-label" for="standard">
+                                            Standard Delivery (3-5 business days)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="service_type" id="express" value="express">
+                                        <label class="form-check-label" for="express">
+                                            Express Delivery (1-2 business days)
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Insurance</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="insurance" name="insurance">
+                                        <label class="form-check-label" for="insurance">
+                                            Add insurance (Recommended for valuable items)
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Your tracking number will be generated after submission.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-shipping-fast me-2"></i>Create Shipment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.querySelectorAll('.needs-validation')
+    
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %}
