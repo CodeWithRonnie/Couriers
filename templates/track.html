@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Track Your Shipment - SpeedyCourier{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0"><i class="fas fa-truck me-2"></i>Track Your Shipment</h2>
+                </div>
+                <div class="card-body">
+                    <form id="trackingForm" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="trackingNumber" 
+                                   name="tracking_number" 
+                                   placeholder="Enter your tracking number"
+                                   value="{{ tracking_number }}"
+                                   required>
+                            <button class="btn btn-primary" type="submit" id="trackButton">
+                                <i class="fas fa-search me-2"></i>Track
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div id="loading" class="text-center my-4 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Fetching your shipment details...</p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+
+                    <!-- Shipment Details -->
+                    <div id="shipmentDetails" class="d-none">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Shipment Details</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Tracking Number</p>
+                                        <h5 id="trackingNumberDisplay" class="mb-3">-</h5>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Status</p>
+                                        <h5><span id="statusBadge" class="badge bg-primary">-</span></h5>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Sender</p>
+                                        <p id="senderInfo" class="mb-3">-</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Receiver</p>
+                                        <p id="receiverInfo" class="mb-3">-</p>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Pickup Address</p>
+                                        <p id="pickupAddress" class="mb-3">-</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Delivery Address</p>
+                                        <p id="deliveryAddress" class="mb-3">-</p>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Shipment Date</p>
+                                        <p id="shipmentDate">-</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1 text-muted">Weight</p>
+                                        <p id="shipmentWeight">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tracking Timeline -->
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Tracking History</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline" id="timeline">
+                                    <!-- Timeline items will be added by JavaScript -->
+                                    <div class="text-center text-muted py-4" id="noHistory">
+                                        No tracking history available
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trackingForm = document.getElementById('trackingForm');
+    const trackingNumberInput = document.getElementById('trackingNumber');
+    const loadingDiv = document.getElementById('loading');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const shipmentDetails = document.getElementById('shipmentDetails');
+    
+    // If there's a tracking number in the URL, fetch the data
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackingNumber = urlParams.get('tracking_number');
+    
+    if (trackingNumber && trackingNumber.trim() !== '') {
+        fetchTrackingData(trackingNumber);
+    }
+    
+    // Handle form submission
+    trackingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const trackingNumber = trackingNumberInput.value.trim();
+        
+        if (trackingNumber === '') {
+            showError('Please enter a tracking number');
+            return;
+        }
+        
+        // Update URL without page reload
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('tracking_number', trackingNumber);
+        window.history.pushState({}, '', newUrl);
+        
+        fetchTrackingData(trackingNumber);
+    });
+    
+    function fetchTrackingData(trackingNumber) {
+        // Show loading state
+        loadingDiv.classList.remove('d-none');
+        errorAlert.classList.add('d-none');
+        shipmentDetails.classList.add('d-none');
+        
+        // Fetch data from API
+        fetch(`/api/track/${encodeURIComponent(trackingNumber)}`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Failed to fetch tracking information');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    displayShipmentDetails(data.data);
+                } else {
+                    showError(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                showError(error.message || 'Failed to fetch tracking information');
+            })
+            .finally(() => {
+                loadingDiv.classList.add('d-none');
+            });
+    }
+    
+    function displayShipmentDetails(shipment) {
+        // Update shipment details
+        document.getElementById('trackingNumberDisplay').textContent = shipment.tracking_number;
+        
+        // Update status badge
+        const statusBadge = document.getElementById('statusBadge');
+        statusBadge.textContent = shipment.status;
+        statusBadge.className = 'badge ' + getStatusBadgeClass(shipment.status);
+        
+        // Update other fields
+        document.getElementById('senderInfo').textContent = shipment.sender;
+        document.getElementById('receiverInfo').textContent = shipment.receiver;
+        document.getElementById('pickupAddress').textContent = shipment.pickup_address;
+        document.getElementById('deliveryAddress').textContent = shipment.delivery_address;
+        document.getElementById('shipmentDate').textContent = new Date(shipment.created_at).toLocaleString();
+        document.getElementById('shipmentWeight').textContent = shipment.weight ? `${shipment.weight} kg` : 'N/A';
+        
+        // Show the details
+        shipmentDetails.classList.remove('d-none');
+    }
+    
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+        shipmentDetails.classList.add('d-none');
+    }
+    
+    function getStatusBadgeClass(status) {
+        const statusMap = {
+            'Pending': 'bg-secondary',
+            'In Transit': 'bg-info',
+            'Out for Delivery': 'bg-primary',
+            'Delivered': 'bg-success',
+            'Exception': 'bg-warning',
+            'Returned': 'bg-danger'
+        };
+        return statusMap[status] || 'bg-secondary';
+    }
+});
+</script>
+
+<style>
+/* Timeline styling */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 10px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+    padding-left: 30px;
+    margin-bottom: 20px;
+}
+
+.timeline-item:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #0d6efd;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.timeline-item .timeline-date {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.timeline-item .timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 3px solid #0d6efd;
+}
+</style>
+{% endblock %}
