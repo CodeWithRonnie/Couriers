@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SpeedyCourier{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Admin Dashboard</h1>
+        <div>
+            <a href="{{ url_for('create_shipment') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> New Shipment
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-primary border-4 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-primary fw-bold small">Total Shipments</div>
+                            <div class="h3 mb-0">{{ stats.total_shipments }}</div>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-boxes text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-warning border-4 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-warning fw-bold small">In Transit</div>
+                            <div class="h3 mb-0">{{ stats.in_transit }}</div>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-truck text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-info border-4 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-info fw-bold small">Out for Delivery</div>
+                            <div class="h3 mb-0">{{ stats.out_for_delivery }}</div>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-shipping-fast text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-success border-4 border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase text-success fw-bold small">Delivered</div>
+                            <div class="h3 mb-0">{{ stats.delivered }}</div>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Shipments -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Shipments</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search shipments...">
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tracking #</th>
+                            <th>Receiver</th>
+                            <th>Status</th>
+                            <th>Last Update</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shipment in recent_shipments %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('track_shipment', tracking_number=shipment.tracking_number) }}" class="text-decoration-none">
+                                    {{ shipment.tracking_number }}
+                                </a>
+                            </td>
+                            <td>{{ shipment.receiver_name }}</td>
+                            <td>
+                                <span class="badge {{ 'bg-success' if shipment.status == 'Delivered' else 'bg-warning' if shipment.status == 'In Transit' else 'bg-info' }}">
+                                    {{ shipment.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if shipment.tracking_events %}
+                                    {{ shipment.tracking_events[-1].timestamp.strftime('%b %d, %Y %I:%M %p') }}
+                                    <small class="d-block text-muted">{{ shipment.tracking_events[-1].location or '' }}</small>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('update_shipment_status', tracking_number=shipment.tracking_number) }}" 
+                                       class="btn btn-outline-primary" title="Update Status">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('track_shipment', tracking_number=shipment.tracking_number) }}" 
+                                       class="btn btn-outline-secondary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="text-muted">No shipments found</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    Showing {{ recent_shipments|length }} of {{ stats.total_shipments }} shipments
+                </div>
+                <a href="#" class="btn btn-sm btn-outline-primary">
+                    View All Shipments <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple search functionality
+$(document).ready(function() {
+    $("#searchButton").click(function() {
+        var searchText = $("#searchInput").val().toLowerCase();
+        $("table tbody tr").each(function() {
+            var rowText = $(this).text().toLowerCase();
+            if (rowText.indexOf(searchText) === -1) {
+                $(this).hide();
+            } else {
+                $(this).show();
+            }
+        });
+    });
+    
+    // Trigger search on Enter key
+    $("#searchInput").keyup(function(event) {
+        if (event.keyCode === 13) {
+            $("#searchButton").click();
+        }
+    });
+});
+</script>
+{% endblock %}

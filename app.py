@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import desc
+from datetime import datetime, timedelta
+from sqlalchemy import desc, func, or_
+from functools import wraps
 import os
 import random
-from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -33,6 +34,7 @@ class TrackingEvent(db.Model):
     location = db.Column(db.String(200))
     description = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
     def to_dict(self):
         return {
@@ -54,6 +56,7 @@ class Shipment(db.Model):
     delivery_address = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(50), default='Pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     weight = db.Column(db.Float)
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -61,6 +64,47 @@ class Shipment(db.Model):
     # Relationship with tracking events
     tracking_events = db.relationship('TrackingEvent', backref='shipment', lazy=True, 
                                     order_by=desc(TrackingEvent.timestamp))
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'))
+    
+    def to_dict(self):
+        """Convert notification to dictionary for JSON responses"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'message': self.message,
+            'is_read': self.is_read,
+            'created_at': self.created_at.isoformat(),
+            'shipment_id': self.shipment_id,
+            'time_ago': self.get_time_ago()
+        }
+        
+    def get_time_ago(self):
+        """Get human-readable time difference"""
+        now = datetime.utcnow()
+        diff = now - self.created_at
+        
+        if diff.days > 30:
+            return self.created_at.strftime('%b %d, %Y')
+        elif diff.days > 1:
+            return f"{diff.days} days ago"
+        elif diff.days == 1:
+            return "Yesterday"
+        elif diff.seconds >= 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds >= 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "Just now"
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -219,9 +263,9 @@ def register():
 
 def generate_tracking_number():
     """Generate a unique tracking number in format SCYYMMDDXXXXX"""
-    date_str = datetime.now().strftime('%y%m%d')
-    random_num = f"{random.randint(1, 99999):05d}"
-    return f"SC{date_str}{random_num}"
+    date_str = datetime.utcnow().strftime('%y%m%d')
+    random_str = ''.join(random.choices(string.digits, k=5))
+    return f'SC{date_str}{random_str}'
 
 @app.route('/dashboard')
 @login_required
@@ -229,6 +273,40 @@ def dashboard():
     # Get user's shipments
     shipments = Shipment.query.filter_by(user_id=current_user.id).order_by(Shipment.created_at.desc()).limit(5).all()
     return render_template('dashboard.html', shipments=shipments)
+
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    """Admin dashboard with shipment statistics and recent activity"""
+    if not current_user.is_admin:
+        abort(403)  # Forbidden
+    
+    # Get statistics for the admin dashboard
+    stats = {
+        'total_shipments': Shipment.query.count(),
+        'in_transit': Shipment.query.filter_by(status='In Transit').count(),
+        'out_for_delivery': Shipment.query.filter_by(status='Out for Delivery').count(),
+        'delivered': Shipment.query.filter_by(status='Delivered').count(),
+        'pending': Shipment.query.filter_by(status='Processing').count(),
+        'exceptions': Shipment.query.filter_by(status='Exception').count(),
+    }
+    
+    # Get recent shipments
+    recent_shipments = Shipment.query\
+        .order_by(Shipment.updated_at.desc())\
+        .limit(10)\
+        .all()
+    
+    # Get recent tracking events
+    recent_events = TrackingEvent.query\
+        .order_by(TrackingEvent.timestamp.desc())\
+        .limit(10)\
+        .all()
+    
+    return render_template('admin/dashboard.html',
+                         stats=stats,
+                         recent_shipments=recent_shipments,
+                         recent_events=recent_events)
 
 @app.route('/shipments/create', methods=['GET', 'POST'])
 @login_required
@@ -302,7 +380,106 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
+def send_shipment_notification(shipment, status, location, notes=None):
+    """Send notification to customer about shipment status update"""
+    try:
+        subject = f"Shipment {shipment.tracking_number} - Status Update: {status}"
+        
+        # In a real app, you would use a proper email template and possibly a background task
+        message = f"""
+        Your shipment {shipment.tracking_number} status has been updated to: {status}
+        
+        Location: {location}
+        
+        """
+        if notes:
+            message += f"Notes: {notes}\n\n"
+            
+        message += "Thank you for using SpeedyCourier!"
+        
+        # Log the notification (in a real app, you would send an email/SMS here)
+        current_app.logger.info(f"Notification sent for shipment {shipment.tracking_number}: {status}")
+        
+        # Create a notification record in the database
+        notification = Notification(
+            user_id=shipment.user_id,
+            title=f"Shipment {status}",
+            message=f"Your shipment {shipment.tracking_number} is now {status}",
+            shipment_id=shipment.id
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Error sending notification: {str(e)}")
+        return False
+
+@app.route('/admin/shipments/<tracking_number>/update', methods=['GET', 'POST'])
+@login_required
+def update_shipment_status(tracking_number):
+    """Update shipment status and add tracking event"""
+    if not current_user.is_admin:
+        abort(403)  # Forbidden
+    
+    shipment = Shipment.query.filter_by(tracking_number=tracking_number).first_or_404()
+    
+    if request.method == 'POST':
+        status = request.form.get('status')
+        location = request.form.get('location')
+        description = request.form.get('description')
+        notify_customer = 'notify_customer' in request.form
+        
+        # Create tracking event
+        event = TrackingEvent(
+            shipment_id=shipment.id,
+            status=status,
+            location=location,
+            description=description,
+            user_id=current_user.id
+        )
+        
+        # Update shipment status if changed
+        if shipment.status != status:
+            shipment.status = status
+            shipment.updated_at = datetime.utcnow()
+        
+        db.session.add(event)
+        db.session.commit()
+        
+        # Send notification to customer if requested
+        if notify_customer:
+            send_shipment_notification(
+                shipment=shipment,
+                status=status,
+                location=location,
+                notes=description
+            )
+        
+        flash(f'Shipment status updated successfully!', 'success')
+        return redirect(url_for('track_shipment', tracking_number=tracking_number))
+    
+    # Get all tracking events for this shipment
+    tracking_events = TrackingEvent.query\
+        .filter_by(shipment_id=shipment.id)\
+        .order_by(TrackingEvent.timestamp.asc())\
+        .all()
+    
+    # Get available status options
+    status_options = [
+        'Processing',
+        'In Transit',
+        'Out for Delivery',
+        'Delivered',
+        'Exception'
+    ]
+    
+    return render_template('admin/update_shipment.html',
+                         shipment=shipment,
+                         tracking_events=tracking_events,
+                         status_options=status_options)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)

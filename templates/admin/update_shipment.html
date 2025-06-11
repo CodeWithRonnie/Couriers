@@ -1,0 +1,216 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Update Shipment - Admin{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">
+            <i class="fas fa-edit me-2"></i>Update Shipment #{{ shipment.tracking_number }}
+        </h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Shipment Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-1">Sender</h6>
+                            <p class="mb-1">{{ shipment.sender_name }}</p>
+                            <p class="text-muted small mb-0">{{ shipment.pickup_address }}</p>
+                            {% if shipment.sender_phone %}
+                            <p class="text-muted small mb-0">{{ shipment.sender_phone }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-1">Receiver</h6>
+                            <p class="mb-1">{{ shipment.receiver_name }}</p>
+                            <p class="text-muted small mb-0">{{ shipment.delivery_address }}</p>
+                            {% if shipment.receiver_phone %}
+                            <p class="text-muted small mb-0">{{ shipment.receiver_phone }}</p>
+                            {% endif %}
+                            {% if shipment.receiver_email %}
+                            <p class="text-muted small mb-0">{{ shipment.receiver_email }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-muted small mb-1">Current Status</h6>
+                            <span class="badge bg-{{ 'success' if shipment.status == 'Delivered' else 'warning' if shipment.status == 'In Transit' else 'info' if shipment.status == 'Processing' else 'danger' }}">
+                                {{ shipment.status }}
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted small mb-1">Created</h6>
+                            <p class="mb-0">{{ shipment.created_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted small mb-1">Last Updated</h6>
+                            <p class="mb-0">{{ shipment.updated_at.strftime('%b %d, %Y %I:%M %p') if shipment.updated_at else 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+                    
+                    <h5 class="mb-3">Update Status</h5>
+                    <form method="POST" action="{{ url_for('update_shipment_status', tracking_number=shipment.tracking_number) }}">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="">Select status...</option>
+                                <option value="Processing" {% if shipment.status == 'Processing' %}selected{% endif %}>Processing</option>
+                                <option value="In Transit" {% if shipment.status == 'In Transit' %}selected{% endif %}>In Transit</option>
+                                <option value="Out for Delivery" {% if shipment.status == 'Out for Delivery' %}selected{% endif %}>Out for Delivery</option>
+                                <option value="Delivered" {% if shipment.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="Exception" {% if shipment.status == 'Exception' %}selected{% endif %}>Exception</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Current Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ shipment.tracking_events[-1].location if shipment.tracking_events else '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Status Details</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                            <div class="form-text">Provide details about the current status (e.g., "Package scanned at distribution center")</div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="notify_customer" name="notify_customer" checked>
+                            <label class="form-check-label" for="notify_customer">
+                                Notify customer about this update
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary me-md-2">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Update Status
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3">Tracking History</h5>
+                    <div class="timeline">
+                        {% if tracking_events %}
+                            {% for event in tracking_events|reverse %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ event.status }}</h6>
+                                        <small class="text-muted">{{ event.timestamp.strftime('%b %d, %I:%M %p') }}</small>
+                                    </div>
+                                    {% if event.location %}
+                                    <p class="mb-1 small"><i class="fas fa-map-marker-alt me-2"></i>{{ event.location }}</p>
+                                    {% endif %}
+                                    {% if event.description %}
+                                    <p class="mb-0 small text-muted">{{ event.description }}</p>
+                                    {% endif %}
+                                    {% if event.user %}
+                                    <p class="mb-0 small mt-1">
+                                        <i class="fas fa-user me-1"></i>Updated by: {{ event.user.name }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No tracking history available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0 20px 30px;
+    margin: 0;
+    list-style: none;
+    border-left: 2px solid #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding: 0 0 20px 20px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -8px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid #0d6efd;
+    z-index: 1;
+}
+
+.timeline-content {
+    position: relative;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.timeline-item:last-child .timeline-content:before {
+    display: none;
+}
+
+/* Status-specific colors */
+.timeline-item[data-status="Processing"] .timeline-marker {
+    border-color: #0dcaf0;
+    background-color: #0dcaf0;
+}
+
+.timeline-item[data-status="In Transit"] .timeline-marker {
+    border-color: #ffc107;
+    background-color: #ffc107;
+}
+
+.timeline-item[data-status="Out for Delivery"] .timeline-marker {
+    border-color: #fd7e14;
+    background-color: #fd7e14;
+}
+
+.timeline-item[data-status="Delivered"] .timeline-marker {
+    border-color: #198754;
+    background-color: #198754;
+}
+
+.timeline-item[data-status="Exception"] .timeline-marker {
+    border-color: #dc3545;
+    background-color: #dc3545;
+}
+</style>
+{% endblock %}
