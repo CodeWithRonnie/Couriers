@@ -234,26 +234,67 @@ def dashboard():
 @login_required
 def create_shipment():
     if request.method == 'POST':
-        # Handle shipment creation
-        tracking_number = f"TRK{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        new_shipment = Shipment(
-            tracking_number=tracking_number,
-            sender_name=request.form.get('sender_name'),
-            sender_phone=request.form.get('sender_phone'),
-            receiver_name=request.form.get('receiver_name'),
-            receiver_phone=request.form.get('receiver_phone'),
-            pickup_address=request.form.get('pickup_address'),
-            delivery_address=request.form.get('delivery_address'),
-            weight=float(request.form.get('weight', 0)),
-            description=request.form.get('description'),
-            user_id=current_user.id
-        )
-        db.session.add(new_shipment)
-        db.session.commit()
-        
-        flash(f'Shipment created successfully! Tracking number: {tracking_number}', 'success')
-        return redirect(url_for('dashboard'))
+        try:
+            # Generate tracking number
+            tracking_number = generate_tracking_number()
+            
+            # Create new shipment
+            new_shipment = Shipment(
+                tracking_number=tracking_number,
+                sender_name=request.form.get('sender_name'),
+                sender_phone=request.form.get('sender_phone'),
+                receiver_name=request.form.get('receiver_name'),
+                receiver_phone=request.form.get('receiver_phone'),
+                pickup_address=request.form.get('pickup_address'),
+                delivery_address=request.form.get('delivery_address'),
+                weight=float(request.form.get('weight', 0)),
+                description=request.form.get('description', ''),
+                user_id=current_user.id,
+                status='Processing'  # Initial status
+            )
+            
+            # Add initial tracking event
+            initial_event = TrackingEvent(
+                shipment=new_shipment,
+                status='Processing',
+                location=request.form.get('pickup_address'),
+                description='Shipment created and awaiting pickup'
+            )
+            
+            db.session.add(new_shipment)
+            db.session.add(initial_event)
+            db.session.commit()
+            
+            flash(f'Shipment created successfully! Tracking Number: {tracking_number}', 'success')
+            return redirect(url_for('track_shipment', tracking_number=tracking_number))
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f'Error creating shipment: {str(e)}')
+            flash('Error creating shipment. Please try again.', 'danger')
+    
     return render_template('create_shipment.html')
+
+@app.route('/tracking/<tracking_number>')
+@login_required
+def track_shipment(tracking_number):
+    """View details of a specific shipment"""
+    shipment = Shipment.query.filter_by(tracking_number=tracking_number).first_or_404()
+    
+    # Check if the current user is the owner or an admin
+    if not current_user.is_admin and shipment.user_id != current_user.id:
+        flash('You do not have permission to view this shipment.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Get tracking events in chronological order
+    tracking_events = TrackingEvent.query.filter_by(shipment_id=shipment.id)\
+        .order_by(TrackingEvent.timestamp.asc())\
+        .all()
+    
+    return render_template('track.html', 
+                         shipment=shipment, 
+                         tracking_events=tracking_events,
+                         current_status=shipment.status)
 
 @app.route('/logout')
 @login_required
