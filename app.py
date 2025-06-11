@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import desc
 import os
 from datetime import datetime
 
@@ -24,6 +25,23 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     is_admin = db.Column(db.Boolean, default=False)
 
+class TrackingEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'), nullable=False)
+    status = db.Column(db.String(50), nullable=False)
+    location = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'status': self.status,
+            'location': self.location,
+            'description': self.description,
+            'timestamp': self.timestamp.isoformat()
+        }
+
 class Shipment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tracking_number = db.Column(db.String(20), unique=True, nullable=False)
@@ -38,6 +56,10 @@ class Shipment(db.Model):
     weight = db.Column(db.Float)
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relationship with tracking events
+    tracking_events = db.relationship('TrackingEvent', backref='shipment', lazy=True, 
+                                    order_by=desc(TrackingEvent.timestamp))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -66,6 +88,9 @@ def get_tracking(tracking_number):
             'message': 'No shipment found with this tracking number'
         }), 404
     
+    # Get tracking events
+    tracking_events = [event.to_dict() for event in shipment.tracking_events]
+    
     # Format the response
     shipment_data = {
         'tracking_number': shipment.tracking_number,
@@ -76,12 +101,61 @@ def get_tracking(tracking_number):
         'delivery_address': shipment.delivery_address,
         'created_at': shipment.created_at.isoformat(),
         'weight': shipment.weight,
-        'description': shipment.description
+        'description': shipment.description,
+        'tracking_events': tracking_events
     }
     
     return jsonify({
         'status': 'success',
         'data': shipment_data
+    })
+
+@app.route('/api/track/<tracking_number>/events', methods=['GET'])
+def get_tracking_events(tracking_number):
+    """API endpoint to get tracking events for a shipment"""
+    if not tracking_number:
+        return jsonify({'error': 'Tracking number is required'}), 400
+    
+    shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
+    if not shipment:
+        return jsonify({'error': 'Shipment not found'}), 404
+    
+    events = [event.to_dict() for event in shipment.tracking_events]
+    return jsonify(events)
+
+@app.route('/api/track/<tracking_number>/update', methods=['POST'])
+@login_required
+def update_tracking(tracking_number):
+    """API endpoint to update shipment status and add tracking events"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    if not data or 'status' not in data:
+        return jsonify({'error': 'Status is required'}), 400
+    
+    shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
+    if not shipment:
+        return jsonify({'error': 'Shipment not found'}), 404
+    
+    # Update shipment status
+    shipment.status = data['status']
+    
+    # Create new tracking event
+    event = TrackingEvent(
+        shipment_id=shipment.id,
+        status=data['status'],
+        location=data.get('location', ''),
+        description=data.get('description', '')
+    )
+    
+    db.session.add(event)
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'message': 'Tracking updated successfully',
+        'event': event.to_dict()
     })
 
 # Track page route
